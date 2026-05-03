@@ -1,0 +1,4 @@
+cache:
+  adapter: memory
+  ttl: 3600
+  prefix: app_

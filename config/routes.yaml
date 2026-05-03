@@ -1,0 +1,10 @@
+routes:
+  home:
+    path: /
+    handler: IndexController.Index
+    methods: [GET]
+
+  health:
+    path: /health
+    handler: HealthController.Check
+    methods: [GET]

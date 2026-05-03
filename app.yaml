@@ -1,0 +1,8 @@
+app:
+  name: gmcore-app
+  version: 1.0.0
+  author: Developer Name
+  author_email: dev@example.com
+  description: GMCore application
+  license: MIT
+  homepage: https://example.com

@@ -1,0 +1,7 @@
+database:
+  driver: postgres
+  dsn: ${DATABASE_URL}
+  pool:
+    max_open: 25
+    max_idle: 5
+    max_lifetime: 5m

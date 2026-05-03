@@ -6,4 +6,4 @@ require (
 	github.com/gmcorenet/framework v1.0.0
 )
 
-replace github.com/gmcorenet/framework => ../../framework
+replace github.com/gmcorenet/framework => ../framework

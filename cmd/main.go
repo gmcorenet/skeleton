@@ -9,9 +9,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gmcORE/framework/kernel"
-	"github.com/gmcORE/framework/container"
-	"github.com/gmcORE/framework/router"
+	"github.com/gmcorenet/framework/kernel"
+	"github.com/gmcorenet/framework/container"
+	"github.com/gmcorenet/framework/router"
 )
 
 func main() {

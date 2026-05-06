@@ -1,13 +1,1 @@
-services:
-  defaults:
-    autowire: true
-    public: false
-
-  controllers:
-    resource: internal/controller/
-    tags: [controller]
-
-  services:
-    App\Service\UserService:
-      arguments:
-        $kernel: '@kernel'
+imports: []

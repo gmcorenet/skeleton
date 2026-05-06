@@ -25,9 +25,8 @@ skeleton/
 │   └── server/
 │       └── main.go        # HTTP server entry
 ├── config/                # Configuration (like Symfony config/)
+│   ├── README.md         # How config works in the skeleton
 │   ├── app.yaml          # Main app config
-│   ├── routes.yaml       # Route definitions
-│   ├── services.yaml     # Service definitions
 │   └── packages/         # Package configs
 │       ├── cache.yaml
 │       ├── database.yaml
@@ -162,49 +161,11 @@ logging:
   format: json
 ```
 
-### config/routes.yaml
+### config/README.md
 
-```yaml
-routes:
-  health:
-    path: /health
-    handler: HealthController.Check
-    methods: [GET]
-
-  api:
-    path: /api/v1
-    routes:
-      users:
-        path: /users
-        handler: UserController.List
-        methods: [GET]
-      user:
-        path: /users/{id}
-        handler: UserController.Get
-        methods: [GET]
-```
-
-### config/services.yaml
-
-```yaml
-services:
-  defaults:
-    autowire: true
-    public: false
-
-  controllers:
-    resource: internal/controller/
-    tags: [controller]
-
-  services:
-    App\Service\UserService:
-      arguments:
-        $repository: '@App\Repository\UserRepository'
-
-    App\Repository\UserRepository:
-      arguments:
-        $db: '@database'
-```
+Documentation explaining how configuration works: `app.yaml` for app settings,
+environment variables for overrides and secrets, Go code for routes and services.
+See the file itself for details.
 
 ### internal/kernel/kernel.go
 

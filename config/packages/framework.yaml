@@ -1,9 +1,9 @@
 framework:
   error_handling:
-    display_errors: ${APP_DEBUG}
+    display_errors: "%env(APP_DEBUG)%"
     log_errors: true
 
   timezone: UTC
 
   secrets:
-    app_secret: ${APP_SECRET}
+    app_secret: "%env(APP_SECRET)%"

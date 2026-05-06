@@ -1,0 +1,25 @@
+{
+  "Method": "GET",
+  "URL": "/_profiler/latest",
+  "StatusCode": 200,
+  "Route": "",
+  "Controller": "",
+  "IP": "127.0.0.1:45142",
+  "Time": "2026-05-06T18:53:50.14108887Z",
+  "Duration": 921578,
+  "Memory": 414872,
+  "Timeline": null,
+  "Queries": null,
+  "Logs": null,
+  "CacheStats": {
+    "Hits": 0,
+    "Misses": 0,
+    "Keys": null,
+    "TotalSize": 0
+  },
+  "Headers": {
+    "Accept": "*/*",
+    "User-Agent": "curl/7.88.1"
+  },
+  "Exception": null
+}

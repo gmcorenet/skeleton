@@ -1,0 +1,25 @@
+{
+  "Method": "GET",
+  "URL": "/_profiler/latest",
+  "StatusCode": 404,
+  "Route": "",
+  "Controller": "",
+  "IP": "127.0.0.1:56210",
+  "Time": "2026-05-06T18:53:05.339344392Z",
+  "Duration": 197428,
+  "Memory": 498848,
+  "Timeline": null,
+  "Queries": null,
+  "Logs": null,
+  "CacheStats": {
+    "Hits": 0,
+    "Misses": 0,
+    "Keys": null,
+    "TotalSize": 0
+  },
+  "Headers": {
+    "Accept": "*/*",
+    "User-Agent": "curl/7.88.1"
+  },
+  "Exception": null
+}

@@ -1,3 +1,4 @@
+.env
 .env.local
 .env.*.local
 var/cache/*
@@ -7,6 +8,6 @@ var/data/*
 var/socket/*
 var/generated/*
 bin/app
-internal/generated/register_gen.go
+internal/generated/*
 .DS_Store
 Thumbs.db

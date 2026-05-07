@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.title}}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: system-ui, -apple-system, sans-serif; background: #f0f2f5; color: #333; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .card { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 48px; max-width: 600px; width: 90%; text-align: center; }
+        h1 { font-size: 2rem; margin-bottom: 8px; color: #1a1a2e; }
+        .tagline { color: #666; margin-bottom: 32px; font-size: 1.1rem; }
+        .services { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-top: 24px; }
+        .service { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 12px; font-size: 0.85rem; text-align: center; }
+        .service .name { font-weight: 600; color: #495057; }
+        .env-badge { display: inline-block; padding: 4px 12px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; margin-top: 16px; }
+        .env-dev { background: #d4edda; color: #155724; }
+        .env-prod { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>{{.title}}</h1>
+        <p class="tagline">{{.message}}</p>
+        <div class="services">
+            {{range .sdks}}<div class="service"><span class="name">{{.}}</span></div>{{end}}
+        </div>
+        <div class="env-badge {{if eq .env "dev"}}env-dev{{else}}env-prod{{end}}">{{.env | title}}</div>
+    </div>
+</body>
+</html>

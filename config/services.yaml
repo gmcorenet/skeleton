@@ -1,1 +1,15 @@
-imports: []
+imports:
+  - github.com/gmcorenet/sdk/gmcore-debugbar
+  - github.com/gmcorenet/sdk/gmcore-error
+  - github.com/gmcorenet/sdk/gmcore-filesystem
+  - github.com/gmcorenet/sdk/gmcore-form
+  - github.com/gmcorenet/sdk/gmcore-httpclient
+  - github.com/gmcorenet/sdk/gmcore-i18n
+  - github.com/gmcorenet/sdk/gmcore-log
+  - github.com/gmcorenet/sdk/gmcore-mailer
+  - github.com/gmcorenet/sdk/gmcore-messenger
+  - github.com/gmcorenet/sdk/gmcore-scheduler
+  - github.com/gmcorenet/sdk/gmcore-serializer
+  - github.com/gmcorenet/sdk/gmcore-templating
+  - github.com/gmcorenet/sdk/gmcore-transport
+  - github.com/gmcorenet/sdk/gmcore-webhook

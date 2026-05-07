@@ -5,10 +5,12 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -16,21 +18,22 @@ import (
 	"github.com/gmcorenet/framework/routing"
 	_ "github.com/gmcorenet/framework/csrf"
 	_ "github.com/gmcorenet/framework/session"
-	_ "github.com/gmcorenet/sdk/gmcore-debugbar"
-	_ "github.com/gmcorenet/sdk/gmcore-filesystem"
-	_ "github.com/gmcorenet/sdk/gmcore-form"
-	_ "github.com/gmcorenet/sdk/gmcore-transport"
+	_ "github.com/gmcorenet/sdk-gmcore-debugbar"
+	_ "github.com/gmcorenet/sdk-gmcore-filesystem"
+	_ "github.com/gmcorenet/sdk-gmcore-form"
+	_ "github.com/gmcorenet/sdk-gmcore-transport"
 
-	gmcore_error "github.com/gmcorenet/sdk/gmcore-error"
-	gmcore_httpclient "github.com/gmcorenet/sdk/gmcore-httpclient"
-	gmcore_i18n "github.com/gmcorenet/sdk/gmcore-i18n"
-	gmcore_log "github.com/gmcorenet/sdk/gmcore-log"
-	gmcore_mailer "github.com/gmcorenet/sdk/gmcore-mailer"
-	gmcore_messenger "github.com/gmcorenet/sdk/gmcore-messenger"
-	gmcore_scheduler "github.com/gmcorenet/sdk/gmcore-scheduler"
-	gmcore_serializer "github.com/gmcorenet/sdk/gmcore-serializer"
-	gmcore_templating "github.com/gmcorenet/sdk/gmcore-templating"
-	gmcore_webhook "github.com/gmcorenet/sdk/gmcore-webhook"
+	gmcore_error "github.com/gmcorenet/sdk-gmcore-error"
+	gmcore_httpclient "github.com/gmcorenet/sdk-gmcore-httpclient"
+	gmcore_i18n "github.com/gmcorenet/sdk-gmcore-i18n"
+	gmcore_log "github.com/gmcorenet/sdk-gmcore-log"
+	gmcore_mailer "github.com/gmcorenet/sdk-gmcore-mailer"
+	gmcore_messenger "github.com/gmcorenet/sdk-gmcore-messenger"
+	gmcore_migrations "github.com/gmcorenet/sdk-gmcore-migrations"
+	gmcore_scheduler "github.com/gmcorenet/sdk-gmcore-scheduler"
+	gmcore_serializer "github.com/gmcorenet/sdk-gmcore-serializer"
+	gmcore_templating "github.com/gmcorenet/sdk-gmcore-templating"
+	gmcore_webhook "github.com/gmcorenet/sdk-gmcore-webhook"
 
 	"github.com/gmcorenet/skeleton/internal/generated"
 	"gopkg.in/yaml.v3"
@@ -65,6 +68,22 @@ func loadConfig(path string) (*AppConfig, error) {
 
 func main() {
 	defer gmcore_error.Recover()
+
+	mode := os.Getenv("GMCORE_MODE")
+	switch mode {
+	case "worker":
+		runWorkerMode()
+		return
+	case "migrate":
+		runMigrateMode(false)
+		return
+	case "migrate-rollback":
+		runMigrateMode(true)
+		return
+	case "scheduler":
+		runSchedulerMode()
+		return
+	}
 
 	logger := setupLogger()
 	logger.Info("GMCore Skeleton starting")
@@ -115,6 +134,7 @@ func main() {
 	generated.RegisterGeneratedSecurity(k.Container())
 	generated.RegisterGeneratedCaches(k.Container())
 	generated.RegisterGeneratedValidators(k.Container())
+	generated.RegisterGeneratedSubscribers(k.Container())
 	routing.InjectAll(k.Container())
 
 	handler := routing.ApplyMiddlewares(k.Container(), k.RouteBuilder(), k)
@@ -280,4 +300,171 @@ func getCwd() string {
 		return "."
 	}
 	return filepath.ToSlash(dir)
+}
+
+func runWorkerMode() {
+	logger := setupLogger()
+	logger.Info("Starting messenger worker")
+
+	appRoot := os.Getenv("GMCORE_APP_ROOT")
+	if appRoot == "" {
+		appRoot = getCwd()
+	}
+
+	transport := gmcore_messenger.NewInMemoryTransport()
+	bus := gmcore_messenger.NewBus()
+
+	cfg := &kernel.Config{
+		RootPath: appRoot,
+		Env:      getEnv("APP_ENV", "dev"),
+	}
+	k := kernel.New(cfg)
+	k.RegisterDefaultServices()
+
+	c := k.Container()
+	c.Set("messenger", bus)
+
+	k.Bootstrap(context.Background())
+
+	worker := gmcore_messenger.NewWorker(transport, bus)
+	worker.Start()
+	logger.Info("Worker started, consuming messages")
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+	<-quit
+
+	logger.Info("Shutting down worker")
+	worker.Stop()
+	logger.Info("Worker stopped")
+}
+
+func runMigrateMode(rollback bool) {
+	logger := setupLogger()
+
+	appRoot := os.Getenv("GMCORE_APP_ROOT")
+	if appRoot == "" {
+		appRoot = getCwd()
+	}
+
+	manager := gmcore_migrations.NewMigrationManager()
+	executor := gmcore_migrations.NewExecutor(manager)
+
+	migrationsDir := filepath.Join(appRoot, "migrations")
+	entries, err := os.ReadDir(migrationsDir)
+	if err != nil {
+		logger.Error("No migrations directory found: %v", err)
+		os.Exit(1)
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".sql") {
+			continue
+		}
+		name := strings.TrimSuffix(entry.Name(), ".sql")
+		data, err := os.ReadFile(filepath.Join(migrationsDir, entry.Name()))
+		if err != nil {
+			logger.Error("Failed to read migration %s: %v", entry.Name(), err)
+			continue
+		}
+		content := string(data)
+		upSQL, downSQL := parseMigrationSQL(content)
+		m := gmcore_migrations.NewMigrationFile(name, name)
+		for _, sql := range upSQL {
+			m.AddUp(sql)
+		}
+		for _, sql := range downSQL {
+			m.AddDown(sql)
+		}
+		manager.RegisterMigration(m)
+	}
+
+	if rollback {
+		all := manager.GetAllMigrations()
+		if len(all) == 0 {
+			fmt.Println("No migrations to rollback")
+			return
+		}
+		last := all[len(all)-1]
+		fmt.Printf("Rolling back: %s\n", last.GetName())
+		if err := executor.ExecuteDown(last); err != nil {
+			logger.Error("Rollback failed: %v", err)
+			os.Exit(1)
+		}
+		fmt.Println("Rollback completed")
+		return
+	}
+
+	pending := manager.GetPendingMigrations()
+	if len(pending) == 0 {
+		fmt.Println("No pending migrations")
+		return
+	}
+
+	for _, m := range pending {
+		fmt.Printf("Migrating: %s\n", m.GetName())
+		if err := executor.ExecuteUp(m); err != nil {
+			logger.Error("Migration %s failed: %v", m.GetName(), err)
+			os.Exit(1)
+		}
+	}
+	fmt.Printf("Executed %d migration(s)\n", len(pending))
+}
+
+func parseMigrationSQL(content string) (upSQL, downSQL []string) {
+	lines := strings.Split(content, "\n")
+	var current *[]string
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "-- UP" {
+			current = &upSQL
+			continue
+		}
+		if trimmed == "-- DOWN" {
+			current = &downSQL
+			continue
+		}
+		if current != nil && trimmed != "" && !strings.HasPrefix(trimmed, "--") {
+			trimmed = strings.TrimSuffix(trimmed, ";")
+			*current = append(*current, trimmed)
+		}
+	}
+	return
+}
+
+func runSchedulerMode() {
+	logger := setupLogger()
+	logger.Info("Starting scheduler daemon")
+
+	appRoot := os.Getenv("GMCORE_APP_ROOT")
+	if appRoot == "" {
+		appRoot = getCwd()
+	}
+
+	s := gmcore_scheduler.NewScheduler()
+
+	cfg := &kernel.Config{
+		RootPath: appRoot,
+		Env:      getEnv("APP_ENV", "dev"),
+	}
+	k := kernel.New(cfg)
+	k.RegisterDefaultServices()
+
+	c := k.Container()
+	c.Set("scheduler", s)
+
+	k.Bootstrap(context.Background())
+
+	generated.RegisterGeneratedSubscribers(c)
+
+	s.Start()
+	logger.Info("Scheduler started")
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+	<-quit
+
+	logger.Info("Shutting down scheduler")
+	s.Stop()
+	logger.Info("Scheduler stopped")
 }

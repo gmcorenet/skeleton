@@ -1,0 +1,25 @@
+{
+  "Method": "GET",
+  "URL": "/_routes",
+  "StatusCode": 200,
+  "Route": "",
+  "Controller": "",
+  "IP": "127.0.0.1:60958",
+  "Time": "2026-05-06T19:56:41.386214842Z",
+  "Duration": 214586,
+  "Memory": 854232,
+  "Timeline": null,
+  "Queries": null,
+  "Logs": null,
+  "CacheStats": {
+    "Hits": 0,
+    "Misses": 0,
+    "Keys": null,
+    "TotalSize": 0
+  },
+  "Headers": {
+    "Accept": "*/*",
+    "User-Agent": "curl/7.88.1"
+  },
+  "Exception": null
+}

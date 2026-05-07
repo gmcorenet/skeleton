@@ -18,11 +18,13 @@ import (
 	"github.com/gmcorenet/framework/routing"
 	_ "github.com/gmcorenet/framework/csrf"
 	_ "github.com/gmcorenet/framework/session"
+	_ "github.com/gmcorenet/sdk-gmcore-asset-mapper"
 	_ "github.com/gmcorenet/sdk-gmcore-debugbar"
 	_ "github.com/gmcorenet/sdk-gmcore-filesystem"
 	_ "github.com/gmcorenet/sdk-gmcore-form"
 	_ "github.com/gmcorenet/sdk-gmcore-transport"
 
+	gmcore_asset_mapper "github.com/gmcorenet/sdk-gmcore-asset-mapper"
 	gmcore_error "github.com/gmcorenet/sdk-gmcore-error"
 	gmcore_httpclient "github.com/gmcorenet/sdk-gmcore-httpclient"
 	gmcore_i18n "github.com/gmcorenet/sdk-gmcore-i18n"
@@ -128,6 +130,20 @@ func main() {
 
 	k.Bootstrap(context.Background())
 
+	if err := gmcore_asset_mapper.InstallAssets(filepath.Join(getCwd(), "public")); err != nil {
+		logger.Warn("Asset install warning: %v", err)
+	}
+	http.Handle("/assets/", gmcore_asset_mapper.AssetHandler())
+
+	k.GET("/health", func(w http.ResponseWriter, r *http.Request, params map[string]string) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"status": "healthy",
+			"env":    cfg.Env,
+			"time":   time.Now().Format(time.RFC3339),
+		})
+	})
+
 	routing.PopulateControllers(k.Container())
 	exposed := generated.RegisterGeneratedRoutes(k.RouteBuilder(), k.Container())
 	generated.RegisterGeneratedRateLimits(k.Container())
@@ -209,6 +225,7 @@ func registerSDKServices(k *kernel.Kernel, logger *gmcore_log.Logger, cfg *kerne
 		DisableCache: true,
 		Funcs:        gmcore_templating.GetFuncs(),
 	}
+	tmplCfg.Funcs["asset"] = gmcore_asset_mapper.AssetFunc()
 	if cfg.Env == "prod" {
 		tmplCfg.Mode = "prod"
 		tmplCfg.DisableCache = false

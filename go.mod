@@ -4,6 +4,7 @@ go 1.23
 
 require (
 	github.com/gmcorenet/framework v1.0.0
+	github.com/gmcorenet/sdk-gmcore-asset-mapper v1.0.0
 	github.com/gmcorenet/sdk-gmcore-debugbar v0.1.0
 	github.com/gmcorenet/sdk-gmcore-error v1.0.0
 	github.com/gmcorenet/sdk-gmcore-filesystem v0.1.0
@@ -30,6 +31,7 @@ require (
 
 replace (
 	github.com/gmcorenet/framework => ../framework
+	github.com/gmcorenet/sdk-gmcore-asset-mapper => ../sdks/gmcore-asset-mapper
 	github.com/gmcorenet/sdk-gmcore-config => ../sdks/gmcore-config
 	github.com/gmcorenet/sdk-gmcore-debugbar => ../sdks/gmcore-debugbar
 	github.com/gmcorenet/sdk-gmcore-error => ../sdks/gmcore-error

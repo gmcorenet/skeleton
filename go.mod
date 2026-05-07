@@ -1,6 +1,6 @@
 module github.com/gmcorenet/skeleton
 
-go 1.23
+go 1.26.2
 
 require (
 	github.com/gmcorenet/framework v1.0.0
@@ -24,6 +24,13 @@ require (
 )
 
 require (
+	golang.org/x/crypto v0.28.0 // indirect
+	golang.org/x/net v0.30.0 // indirect
+	golang.org/x/text v0.19.0 // indirect
+)
+
+require (
+	github.com/gmcorenet/sdk-gmcore-cert v1.0.0
 	github.com/gmcorenet/sdk-gmcore-config v1.0.0 // indirect
 	github.com/gmcorenet/sdk-gmcore-events v0.1.0 // indirect
 	github.com/gmcorenet/sdk-gmcore-validation v0.0.0-00010101000000-000000000000 // indirect
@@ -50,3 +57,5 @@ replace (
 	github.com/gmcorenet/sdk-gmcore-validation => ../sdks/gmcore-validation
 	github.com/gmcorenet/sdk-gmcore-webhook => ../sdks/gmcore-webhook
 )
+
+replace github.com/gmcorenet/sdk-gmcore-cert => ../sdks/gmcore-cert

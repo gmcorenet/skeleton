@@ -25,6 +25,7 @@ import (
 	_ "github.com/gmcorenet/sdk-gmcore-transport"
 
 	gmcore_asset_mapper "github.com/gmcorenet/sdk-gmcore-asset-mapper"
+	gmcore_cert "github.com/gmcorenet/sdk-gmcore-cert"
 	gmcore_error "github.com/gmcorenet/sdk-gmcore-error"
 	gmcore_httpclient "github.com/gmcorenet/sdk-gmcore-httpclient"
 	gmcore_i18n "github.com/gmcorenet/sdk-gmcore-i18n"
@@ -84,6 +85,9 @@ func main() {
 		return
 	case "scheduler":
 		runSchedulerMode()
+		return
+	case "cert":
+		runCertMode()
 		return
 	}
 
@@ -484,4 +488,108 @@ func runSchedulerMode() {
 	logger.Info("Shutting down scheduler")
 	s.Stop()
 	logger.Info("Scheduler stopped")
+}
+
+func runCertMode() {
+	logger := setupLogger()
+
+	appRoot := os.Getenv("GMCORE_APP_ROOT")
+	if appRoot == "" {
+		appRoot = getCwd()
+	}
+
+	action := os.Getenv("GMCORE_CERT_ACTION")
+	domain := os.Getenv("CERT_HOSTNAME")
+	email := os.Getenv("CERT_EMAIL")
+
+	if domain == "" && (action == "request" || action == "info") {
+		logger.Error("CERT_HOSTNAME must be set for cert:%s", action)
+		os.Exit(1)
+	}
+
+	lifecycle := gmcore_cert.NewCertLifecycle(appRoot)
+
+	switch action {
+	case "request":
+		if domain == "" || email == "" {
+			logger.Error("CERT_HOSTNAME and CERT_EMAIL must be set for cert:request")
+			os.Exit(1)
+		}
+		logger.Info("Requesting Let's Encrypt certificate for %s", domain)
+		if err := lifecycle.Request(domain, email); err != nil {
+			logger.Error("cert:request failed: %v", err)
+			os.Exit(1)
+		}
+		logger.Info("Certificate obtained successfully for %s", domain)
+
+	case "renew":
+		logger.Info("Renewing Let's Encrypt certificate")
+		if err := lifecycle.Renew(); err != nil {
+			logger.Error("cert:renew failed: %v", err)
+			os.Exit(1)
+		}
+		logger.Info("Certificate renewed successfully")
+
+	case "revoke":
+		if domain == "" {
+			logger.Error("CERT_HOSTNAME must be set for cert:revoke")
+			os.Exit(1)
+		}
+		logger.Info("Revoking certificate for %s", domain)
+		if err := lifecycle.Revoke(domain); err != nil {
+			logger.Error("cert:revoke failed: %v", err)
+			os.Exit(1)
+		}
+
+	case "import":
+		certFile := os.Getenv("CERT_IMPORT_CERT")
+		keyFile := os.Getenv("CERT_IMPORT_KEY")
+		if certFile == "" || keyFile == "" {
+			logger.Error("CERT_IMPORT_CERT and CERT_IMPORT_KEY must be set for cert:import")
+			os.Exit(1)
+		}
+		logger.Info("Importing certificate from %s", certFile)
+		if err := lifecycle.ImportPEM(certFile, keyFile, domain); err != nil {
+			logger.Error("cert:import failed: %v", err)
+			os.Exit(1)
+		}
+
+	case "export":
+		if domain == "" {
+			logger.Error("CERT_HOSTNAME must be set for cert:export")
+			os.Exit(1)
+		}
+		certPEM, keyPEM, err := lifecycle.ExportPEM(domain)
+		if err != nil {
+			logger.Error("cert:export failed: %v", err)
+			os.Exit(1)
+		}
+		fmt.Println(certPEM)
+		fmt.Println(keyPEM)
+
+	case "info":
+		if domain == "" {
+			logger.Error("CERT_HOSTNAME must be set for cert:info")
+			os.Exit(1)
+		}
+		info, err := lifecycle.Info(domain)
+		if err != nil {
+			logger.Error("cert:info failed: %v", err)
+			os.Exit(1)
+		}
+		gmcore_cert.PrintCertInfo(info)
+
+	default:
+		logger.Error("Unknown cert action: %s (use request, renew, revoke, import, export, info)", action)
+		fmt.Println("Usage: GMCORE_MODE=cert GMCORE_CERT_ACTION=<action> [CERT_HOSTNAME=domain] [CERT_EMAIL=email] ...")
+		fmt.Println()
+		fmt.Println("Available actions:")
+		fmt.Println("  request  - Request a new Let's Encrypt certificate")
+		fmt.Println("  renew    - Renew an existing certificate")
+		fmt.Println("  revoke   - Revoke a certificate")
+		fmt.Println("  import   - Import certificate from PEM files (set CERT_IMPORT_CERT, CERT_IMPORT_KEY)")
+		fmt.Println("  export   - Export certificate to PEM")
+		fmt.Println("  info     - Show certificate details")
+		os.Exit(1)
+	}
 }

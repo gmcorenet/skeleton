@@ -1,0 +1,12 @@
+name: skeleton
+version: 1.0.0
+type: skeleton
+description: GMCore Skeleton — application scaffold with wiring for framework, SDKs, and bundles
+server:
+  host: "0.0.0.0"
+  port: "8080"
+app:
+  env: dev
+  debug: false
+  author: GMCore
+  author_email: info@gmcore.net
